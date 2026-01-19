@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Dummy - Desafio DevOps</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .environment {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .env-dev {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .env-prod {
+            background: #28a745;
+            color: white;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            display: inline-block;
+            margin-left: 20px;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .status.loading {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .status.success {
+            background: #28a745;
+            color: white;
+        }
+
+        .status.error {
+            background: #dc3545;
+            color: white;
+        }
+
+        .content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .data-section {
+            margin-bottom: 30px;
+        }
+
+        .data-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .error-message {
+            background: #dc3545;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Frontend Dummy - Desafio DevOps</h1>
+            <p>Aplicação frontend consumindo API backend</p>
+            <div id="environment" class="environment">Carregando ambiente...</div>
+        </header>
+
+        <div class="controls">
+            <button onclick="carregarDados()">Carregar Dados</button>
+            <button onclick="verificarHealth()">Verificar Health</button>
+            <span id="status" class="status" style="display: none;"></span>
+        </div>
+
+        <div class="content">
+            <div class="info-box">
+                <strong>Backend URL:</strong> <span id="backendUrl"></span><br>
+                <strong>Última atualização:</strong> <span id="lastUpdate">Nenhuma</span>
+            </div>
+
+            <div id="dataContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = window.BACKEND_URL || 'http://localhost:30001';
+
+        document.getElementById('backendUrl').textContent = BACKEND_URL;
+
+        async function mostrarStatus(mensagem, tipo) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = mensagem;
+            statusEl.className = `status ${tipo}`;
+            statusEl.style.display = 'inline-block';
+        }
+
+        async function verificarHealth() {
+            try {
+                mostrarStatus('Verificando...', 'loading');
+                const response = await fetch(`${BACKEND_URL}/health`);
+                const data = await response.json();
+
+                document.getElementById('environment').className =
+                    `environment env-${data.environment}`;
+                document.getElementById('environment').textContent =
+                    `Ambiente: ${data.environment.toUpperCase()}`;
+
+                mostrarStatus(`Health OK - ${data.status}`, 'success');
+                document.getElementById('lastUpdate').textContent =
+                    new Date(data.timestamp).toLocaleString('pt-BR');
+
+                setTimeout(() => {
+                    document.getElementById('status').style.display = 'none';
+                }, 3000);
+            } catch (error) {
+                mostrarStatus('Erro ao verificar health', 'error');
+                console.error('Erro:', error);
+            }
+        }
+
+        async function carregarDados() {
+            try {
+                mostrarStatus('Carregando dados...', 'loading');
+                const response = await fetch(`${BACKEND_URL}/dados`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                document.getElementById('environment').className =
+                    `environment env-${data.environment}`;
+                document.getElementById('environment').textContent =
+                    `Ambiente: ${data.environment.toUpperCase()}`;
+
+                exibirDados(data);
+                mostrarStatus('Dados carregados com sucesso!', 'success');
+                document.getElementById('lastUpdate').textContent =
+                    new Date(data.timestamp).toLocaleString('pt-BR');
+
+                setTimeout(() => {
+                    document.getElementById('status').style.display = 'none';
+                }, 3000);
+            } catch (error) {
+                mostrarStatus('Erro ao carregar dados', 'error');
+                document.getElementById('dataContainer').innerHTML = `
+                    <div class="error-message">
+                        <strong>Erro ao carregar dados do backend!</strong><br>
+                        Verifique se o backend está rodando em: ${BACKEND_URL}<br>
+                        Erro: ${error.message}
+                    </div>
+                `;
+                console.error('Erro:', error);
+            }
+        }
+
+        function exibirDados(data) {
+            const container = document.getElementById('dataContainer');
+
+            let html = `
+                <div class="data-section">
+                    <h2>Informações Gerais</h2>
+                    <pre>${JSON.stringify({ message: data.message, environment: data.environment }, null, 2)}</pre>
+                </div>
+            `;
+
+            if (data.data.usuarios) {
+                html += `
+                    <div class="data-section">
+                        <h2>Usuários</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nome</th>
+                                    <th>Email</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.data.usuarios.map(u => `
+                                    <tr>
+                                        <td>${u.id}</td>
+                                        <td>${u.nome}</td>
+                                        <td>${u.email}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            if (data.data.produtos) {
+                html += `
+                    <div class="data-section">
+                        <h2>Produtos</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nome</th>
+                                    <th>Preço</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.data.produtos.map(p => `
+                                    <tr>
+                                        <td>${p.id}</td>
+                                        <td>${p.nome}</td>
+                                        <td>R$ ${p.preco.toFixed(2)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        verificarHealth();
+    </script>
+</body>
+</html>
